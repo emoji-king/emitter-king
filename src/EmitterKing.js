@@ -16,17 +16,18 @@ export class EmitterKing {
     this.errored = false
   }
 
-  data(event) {
+
+  emit(event) {
     this.emitter.on(event, (...args) => {
       this.data.push(args)
       this.process()
     })
   }
 
-  end(event) {
+  end(event, value) {
     this.emitter.on(event, (...args) => {
       this.ended = true
-      this.endval = args
+      this.endval = value
       this.process()
     })
   }
@@ -47,14 +48,17 @@ export class EmitterKing {
   }
 
   process() {
+    while (this.data.length > 0 && this.deferrals.length > 0) {
+      this.deferrals.shift().resolve(...this.data.shift())
+    }
+    if (this.data.length > 0) {
+      return
+    }
     if (this.errored) {
-      this.deferrals.splice(0).forEach((deferred) => { deferred.reject(...this.errorval) })
+      this.deferrals.splice(0).forEach((deferred) => { deferred.reject(this.errorval) })
     }
     if (this.ended) {
-      this.deferrals.splice(0).forEach((deferred) => { deferred.resolve(...this.endval) })
-    }
-    while (data.length > 0 && deferrals.length > 0) {
-      this.deferrals.shift().resolve(...this.data.shift())
+      this.deferrals.splice(0).forEach((deferred) => { deferred.resolve(this.endval) })
     }
   }
 }
